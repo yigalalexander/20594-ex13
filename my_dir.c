@@ -28,6 +28,11 @@ int main(int argc, char * argv[]) {
 	 * 2. parse the directory name
 	 * 2. open the  /dev/fd0
 	 * 3. list
+	 *
+	 * read the superblock
+	 * get size of group descriptors
+	 * find starting point of the inode table
+	 * struct ext2_dir_entry_2 inode_exists (char * path, int inode)   -  check if the file/ dir exists
 	 */
 
 	if (argc==2) { /* check args*/
