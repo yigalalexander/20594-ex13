@@ -10,8 +10,9 @@
 #include <stdio.h>
 #include <linux/types.h>
 #include <string.h>
-#include <ext2_fs.h>
 #include <fs.h>
+#include <ext2_fs.h>
+
 
 #include "debugutil.h"
 

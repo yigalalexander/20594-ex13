@@ -9,6 +9,6 @@
 #include <stdio.h>
 
 
-#define DBG_MSG printf("\n[%d]: %s: ", __LINE__, __FUNCTION__);printf
-#define DBG_ENTRY printf("\n[%d]: --> %s", __LINE__,__FUNCTION__);
-#define DBG_EXIT printf("\n[%d]: <-- %s", __LINE__,__FUNCTION__);
+#define DBG_MSG printf("\n[%d]: %s: \n", __LINE__, __FUNCTION__);printf
+#define DBG_ENTRY printf("\n[%d]: --> %s\n", __LINE__,__FUNCTION__);
+#define DBG_EXIT printf("\n[%d]: <-- %s\n", __LINE__,__FUNCTION__);

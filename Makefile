@@ -1,5 +1,5 @@
 
-FLAGS = -Wall  -L./ -L /usr/src/linux-headers-3.13.0-43-generic/include/linux/ -m32
+FLAGS = -Wall  -L./  -m32
 
 all: clean my_cd 
 
