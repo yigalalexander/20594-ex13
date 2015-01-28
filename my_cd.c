@@ -22,6 +22,7 @@ int inode_size;
 
 int main(int argc, char *argv[])
 {
+	int block_size=BASE_BLOCK_SIZE;  /* bytes per sector from disk geometry */
 	DBG_ENTRY
 	if (argc != 2)
 	{
@@ -34,7 +35,7 @@ int main(int argc, char *argv[])
 	strcpy(dir_name, argv[1]);
 	
 	/* ---- SuperBlock ---- */
-	int fd = read_block(1, buffer);
+	int fd = read_block(1, buffer,block_size);
 	if (fd == -1)
 	{
 		printf("[ERROR] read super block failed\n");
@@ -52,7 +53,7 @@ int main(int argc, char *argv[])
 	inode_size = sb.s_inode_size; /*Size of on-disk inode structure*/
 	
 	/* ---- GroupDescriptor ---- */
-	fd = read_block(2, buffer);
+	fd = read_block(2, buffer,block_size);
 	if (fd == -1)
 	{
 		printf("[ERROR] read group descriptor block failed\n");
@@ -68,7 +69,7 @@ int main(int argc, char *argv[])
 	
 	inode_table = gd.bg_inode_table; /*Block number of first inode table block*/
 
-	if ( valid_path(dir_name) == 0 )
+	if ( valid_path(dir_name,inode_table,inode_size,block_size) == 0 )
 	{
 		path_fid = open("/tmp/.myext2", O_RDWR | O_TRUNC) ;
 		if (path_fid == -1)

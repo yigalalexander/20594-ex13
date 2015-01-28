@@ -21,12 +21,12 @@
 #include "disk_util.h"
 #include "debugutil.h"
 
-int get_dir_entry( struct ext2_dir_entry_2 *dir_pointer, char* entry_name, int inode_number)
+int get_dir_entry( struct ext2_dir_entry_2 *dir_pointer, char* entry_name, int inode_number, int inode_table,int inode_size,int block_size)
 {
 	struct ext2_inode inode;
     int i, j, db_length;
 
-	if(get_inode(&inode, inode_number)==-1)
+	if(get_inode(&inode, inode_number,inode_table,inode_size,block_size)==-1)
 	{
 		printf("[ERROR] get_inode failed\n");
 		return -1;
@@ -36,7 +36,7 @@ int get_dir_entry( struct ext2_dir_entry_2 *dir_pointer, char* entry_name, int i
 	for ( i = 0; i < 12 && (inode.i_block[i]!=0); i++ )
 	{
 		db_length = 0;
-		db_length = read_block(inode.i_block[i], dir_data); /*first data block*/
+		db_length = read_block(inode.i_block[i], dir_data,block_size); /*first data block*/
 		if(db_length == -1)
 		{
 			printf("[ERROR] get_inode failed\n");
@@ -85,7 +85,7 @@ int split_path(char* path, char*** result)
 	return 0;
 }
 
-int valid_path(char path[])
+int valid_path(char path[], int inode_table,int inode_size,int block_size)
 {
 	DBG_ENTRY
 	struct ext2_dir_entry_2 inner_dir;
@@ -103,7 +103,7 @@ int valid_path(char path[])
 	struct ext2_dir_entry_2 current_entry;
 	for(i=0; sub_directories[i] != NULL; i++)
 	{
-		if (get_dir_entry(&current_entry, sub_directories[i], inode_number) == -1)
+		if (get_dir_entry(&current_entry, sub_directories[i], inode_number,inode_table,inode_size,block_size) == -1)
 		{
 			return -1;
 		}
@@ -123,10 +123,10 @@ int open_disk()
 	return open(BASE_DISK_PATH, O_RDWR);
 }
 
-int read_block(int block_number, char *buffer, int * file_id)
+int read_block(int block_number, char *buffer, int block_size)
 {
 	int fid;
-	fid=(*file_id) = open_disk();
+	fid = open_disk();
 	if (fid == -1)
 	{
 		printf("[ERROR] open failed\n");
@@ -154,7 +154,7 @@ int read_block(int block_number, char *buffer, int * file_id)
 	return len;
 }
 
-int read_inode(int inode_number, char *buffer)
+int read_inode(int inode_number, int inode_table, int inode_size, char *buffer,int block_size)
 {
 	int fid;
 	fid = open_disk();
@@ -184,10 +184,10 @@ int read_inode(int inode_number, char *buffer)
 	return len;
 }
 
-int get_inode(struct ext2_inode* inode_pointer, int inode_number)
+int get_inode(struct ext2_inode* inode_pointer, int inode_number,int inode_table, int inode_size,int block_size)
 {
 	char inode[inode_size];
-	int res = read_inode(inode_number, inode);
+	int res = read_inode(inode_number, inode_table,inode_size, inode,block_size);
 	if (res == -1)
 	{
 		printf("[ERROR] read inode %d failed\n", inode_number);
@@ -203,7 +203,7 @@ int get_inode(struct ext2_inode* inode_pointer, int inode_number)
 
 
 
-void print_dir(struct ext2_dir_entry_2) {
+void print_dir(struct ext2_dir_entry_2 dir) {
 
 }
 
