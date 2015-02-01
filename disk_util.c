@@ -23,8 +23,9 @@
 
 int get_dir_entry( struct ext2_dir_entry_2 *dir_pointer, char* entry_name, int inode_number, int inode_table,int inode_size,int block_size)
 {
+	DBG_ENTRY
 	struct ext2_inode inode;
-    int i, j, db_length;
+	int i, j, db_length;
 
 	if(get_inode(&inode, inode_number,inode_table,inode_size,block_size)==-1)
 	{
@@ -32,7 +33,8 @@ int get_dir_entry( struct ext2_dir_entry_2 *dir_pointer, char* entry_name, int i
 		return -1;
 
 	}
-    char dir_data[block_size];
+	char dir_data[block_size];
+	DBG_MSG("dir name is %s",dir_pointer->name);
 	for ( i = 0; i < 12 && (inode.i_block[i]!=0); i++ )
 	{
 		db_length = 0;
@@ -40,6 +42,7 @@ int get_dir_entry( struct ext2_dir_entry_2 *dir_pointer, char* entry_name, int i
 		if(db_length == -1)
 		{
 			printf("[ERROR] get_inode failed\n");
+			DBG_EXIT
 			return -1;
 
 		}
@@ -48,15 +51,18 @@ int get_dir_entry( struct ext2_dir_entry_2 *dir_pointer, char* entry_name, int i
 		{
 			if( memcpy( dir_pointer, dir_data + j, sizeof( struct ext2_dir_entry_2))!= NULL)
 			{
+				DBG_MSG("dir name is %s at inode %d entry is %s",dir_pointer->name,dir_pointer->inode,entry_name);
 				if(!strcmp(dir_pointer->name,entry_name) && dir_pointer->file_type == 2)
 				{
+					DBG_EXIT
 					return 0;
 				}
-			   j += dir_pointer->rec_len;
-			}
+				j += dir_pointer->rec_len;
+			} else return -1; /* To prevent a potential infinite loop in case of a copy error and */
 		}
 	}
-    return -1; /*the entry wasn't found*/
+	DBG_EXIT
+	return -1; /*the entry wasn't found*/
 }
 
 int split_path(char* path, char*** result)
@@ -82,13 +88,13 @@ int split_path(char* path, char*** result)
 	sub_directories[entries_number] = NULL;
 
 	*result = sub_directories;
+	DBG_EXIT
 	return 0;
 }
 
-int valid_path(char path[], int inode_table,int inode_size,int block_size)
+int valid_path(char path[], int inode_table,int inode_size,int block_size, struct ext2_dir_entry_2 * target_dir)
 {
 	DBG_ENTRY
-	struct ext2_dir_entry_2 inner_dir;
 	char** sub_directories;
 	char tmp_path[BUF_SIZE];
 	strcpy(tmp_path , path);
@@ -103,28 +109,103 @@ int valid_path(char path[], int inode_table,int inode_size,int block_size)
 	struct ext2_dir_entry_2 current_entry;
 	for(i=0; sub_directories[i] != NULL; i++)
 	{
+		DBG_MSG("Getting inode_number:%d",inode_number);
 		if (get_dir_entry(&current_entry, sub_directories[i], inode_number,inode_table,inode_size,block_size) == -1)
 		{
 			return -1;
 		}
 		inode_number = current_entry.inode - 1;
+		DBG_MSG("Next inode_number:%d",inode_number);
 	}
-	if( memcpy( &inner_dir, &current_entry, sizeof( struct ext2_dir_entry_2 ) ) == NULL) /*the last one is the most inner one*/
+
+	/*the last one is the most inner one - copy if for further use*/
+	if( memcpy( target_dir, &current_entry, sizeof( struct ext2_dir_entry_2 ) ) == NULL)
 	{
 		printf("[ERROR] memcpy failed\n");
 		return -1;
 	}
+	DBG_EXIT
 	return 0;
 }
 
 int open_disk()
 {
-
+	DBG_ENTRY
 	return open(BASE_DISK_PATH, O_RDWR);
+}
+
+//int read_pwd(char * dir_name)
+//{
+//	DBG_ENTRY
+//	int path_fid;
+//	path_fid = open(PWD_PATH, O_RDONLY);
+//	if (path_fid == -1)
+//	{
+//		if(errno == EACCES)
+//		{
+//			printf("[ERROR] open 'myext2' failed, permission denied\n");
+//		}
+//		else if(errno == ENONET)
+//		{
+//			printf("[ERROR] open 'myext2' failed, the file does not exist\n");
+//		}
+//		else
+//		{
+//			printf("[ERROR] open 'myext2' failed\n");
+//		}
+//		return -1;
+//	}
+//	close(path_fid);
+//	int res = read(path_fid, dir_name, BUF_SIZE);
+//	DBG_MSG("PWD from %s is:%s\n",PWD_PATH,dir_name);
+//	if (res == -1)
+//	{
+//		printf("[ERROR] failed to read from %s\n",PWD_PATH);
+//		return -1;
+//	}
+//	DBG_EXIT
+//	return 0;
+//}
+
+int get_disk_properties(int * block_size, struct ext2_super_block * sb, struct ext2_group_desc * gd)
+{
+	DBG_ENTRY
+	char buffer[*block_size];
+
+	/* ---- SuperBlock ---- */
+	int fd = read_block(1, buffer,*block_size);
+	if (fd == -1)
+	{
+		printf("[ERROR] read super block failed\n");
+		return -1;
+	}
+	if (memcpy((void*)sb, buffer, sizeof(struct ext2_super_block)) == NULL)
+	{
+		printf("[ERROR] memcpy super block failed\n");
+		return -1;
+	}
+	*block_size = (int)pow(2, sb->s_log_block_size) * 1024; /*  Update block size*/
+	/* ---- GroupDescriptor ---- */
+	fd = read_block(2, buffer,*block_size);
+	if (fd == -1)
+	{
+		printf("[ERROR] read group descriptor block failed\n");
+		return -1;
+	}
+
+
+	if(memcpy((void*)gd, buffer, sizeof(struct ext2_group_desc)) == NULL)
+	{
+		printf("[ERROR] memcpy group descriptor block failed\n");
+		return -1;
+	}
+	DBG_EXIT
+	return 0;
 }
 
 int read_block(int block_number, char *buffer, int block_size)
 {
+	DBG_ENTRY
 	int fid;
 	fid = open_disk();
 	if (fid == -1)
@@ -151,11 +232,13 @@ int read_block(int block_number, char *buffer, int block_size)
 	}
 	close(fid);
 	buffer[1023]= '\0';
+	DBG_EXIT
 	return len;
 }
 
 int read_inode(int inode_number, int inode_table, int inode_size, char *buffer,int block_size)
 {
+	DBG_ENTRY
 	int fid;
 	fid = open_disk();
 	if (fid == -1)
@@ -181,11 +264,14 @@ int read_inode(int inode_number, int inode_table, int inode_size, char *buffer,i
 		return -1;
 	}
 	close(fid);
+	DBG_EXIT
 	return len;
 }
 
 int get_inode(struct ext2_inode* inode_pointer, int inode_number,int inode_table, int inode_size,int block_size)
 {
+	DBG_ENTRY
+	DBG_MSG("inode_number: %d",inode_number);
 	char inode[inode_size];
 	int res = read_inode(inode_number, inode_table,inode_size, inode,block_size);
 	if (res == -1)
@@ -193,18 +279,59 @@ int get_inode(struct ext2_inode* inode_pointer, int inode_number,int inode_table
 		printf("[ERROR] read inode %d failed\n", inode_number);
 		return -1;
 	}
-     if( memcpy((void*)inode_pointer, inode, sizeof(struct ext2_inode))== NULL)
-     {
-    	 printf("[ERROR] memcpy to inode struct failed\n");
-    	 return -1;
-     }
-     return 0;
+	if( memcpy((void*)inode_pointer, inode, sizeof(struct ext2_inode))== NULL)
+	{
+		printf("[ERROR] memcpy to inode struct failed\n");
+		return -1;
+	}
+	DBG_EXIT
+	return 0;
 }
 
 
 
-void print_dir(struct ext2_dir_entry_2 dir) {
+int print_dir(struct ext2_dir_entry_2 *dir_pointer, int inode_table,int inode_size,int block_size)
+{
 
+	DBG_ENTRY
+	struct ext2_inode inode;
+	int i, j, db_length;
+
+	DBG_MSG("dir name is %s at inode %d",dir_pointer->name,dir_pointer->inode);
+	if(get_inode(&inode, (dir_pointer->inode),inode_table,inode_size,block_size)==-1)
+	{
+		printf("[ERROR] get_inode failed\n");
+		return -1;
+	}
+	char dir_data[block_size];
+	for ( i = 0; i < 12 && (inode.i_block[i]!=0); i++ ) /* Read the data blocks of the directory  */
+	{
+
+		DBG_MSG("i: %d iblock: %d",i,inode.i_block[i]);
+		db_length = 0;
+		db_length = read_block(inode.i_block[i], dir_data,block_size); /*read a block*/
+		DBG_MSG("i: %d db_length: %d",i,db_length);
+		if(db_length == -1)
+		{
+			printf("[ERROR] get_inode failed\n");
+			return -1;
+
+		}
+		j = 0;
+		while( j < db_length )
+		{
+			if( memcpy( dir_pointer, dir_data + j, sizeof( struct ext2_dir_entry_2))!= NULL)
+			{
+				if(dir_pointer->inode!=0)
+				{
+					DBG_MSG("found dir named %s:",dir_pointer->name);
+				}
+				j += dir_pointer->rec_len;
+			}
+		}
+	}
+	DBG_EXIT
+	return -1; /*the entry wasn't found*/
 }
 
 

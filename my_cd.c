@@ -1,3 +1,13 @@
+/*
+ * my_cd.c - Custom implementation of cd on ext2fs
+ *	Provided by the staff of Operating Systems course at the Open University of Israel
+ *	Modified to re use the code here - most of the disk handling functions are moved to a separate header
+ *
+ *   Created on: Jan 26, 2015
+ *      Student: Yigal Alexander
+ *      	 ID: 306914565
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +32,9 @@ int inode_size;
 
 int main(int argc, char *argv[])
 {
+	DBG_ENTRY
 	int block_size=BASE_BLOCK_SIZE;  /* bytes per sector from disk geometry */
+	struct ext2_dir_entry_2 inner_dir;
 	DBG_ENTRY
 	if (argc != 2)
 	{
@@ -30,48 +42,23 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	char buffer[block_size];
 	char dir_name[BUF_SIZE];	
 	strcpy(dir_name, argv[1]);
-	
-	/* ---- SuperBlock ---- */
-	int fd = read_block(1, buffer,block_size);
-	if (fd == -1)
-	{
-		printf("[ERROR] read super block failed\n");
-		exit(1);
-	}
 
 	struct ext2_super_block sb;
-	if (memcpy((void*)&sb, buffer, sizeof(struct ext2_super_block)) == NULL)
+	struct ext2_group_desc gd;
+	if (get_disk_properties(&block_size,&sb,&gd)==-1)
 	{
-		printf("[ERROR] memcpy super block failed\n");
-		exit(1);
+		printf("[ERROR] failed to get the superblock and group descriptor\n");
+		exit (1);
 	}
 
-	block_size = (int)pow(2, sb.s_log_block_size) * 1024; /*  Block size*/
 	inode_size = sb.s_inode_size; /*Size of on-disk inode structure*/
-	
-	/* ---- GroupDescriptor ---- */
-	fd = read_block(2, buffer,block_size);
-	if (fd == -1)
-	{
-		printf("[ERROR] read group descriptor block failed\n");
-		exit(1);
-	}
-	
-	struct ext2_group_desc gd;
-	if(memcpy((void*)&gd, buffer, sizeof(struct ext2_group_desc)) == NULL)
-	{
-		printf("[ERROR] memcpy group descriptor block failed\n");
-		exit(1);
-	}
-	
 	inode_table = gd.bg_inode_table; /*Block number of first inode table block*/
 
-	if ( valid_path(dir_name,inode_table,inode_size,block_size) == 0 )
+	if ( valid_path(dir_name,inode_table,inode_size,block_size,&inner_dir) == 0 )
 	{
-		path_fid = open("/tmp/.myext2", O_RDWR | O_TRUNC) ;
+		path_fid = open(PWD_PATH, O_RDWR | O_TRUNC) ;
 		if (path_fid == -1)
 		{
 			if(errno == EACCES)
