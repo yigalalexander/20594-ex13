@@ -266,7 +266,7 @@ int print_dir_contents(struct ext2_dir_entry_2 *dir_pointer, int inode_table,int
 	int i, j, db_length;
 
 	DBG_MSG("dir name is %s at inode %d",dir_pointer->name,dir_pointer->inode);
-	if(get_inode(&inode, (dir_pointer->inode),inode_table,inode_size,block_size)==-1)
+	if(get_inode(&inode, (dir_pointer->inode)-1,inode_table,inode_size,block_size)==-1)
 	{
 		printf("[ERROR] get_inode failed\n");
 		return -1;
