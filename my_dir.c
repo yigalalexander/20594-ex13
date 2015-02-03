@@ -53,19 +53,24 @@ int main(int argc, char *argv[])
 	path_fid = open(PWD_PATH, O_RDONLY) ;
 	if (path_fid == -1)
 	{
-		if(errno == EACCES)
+		if(errno == ENONET)
 		{
-			printf("[ERROR] open 'myext2' failed, permission denied\n");
-		}
-		else if(errno == ENONET)
-		{
-			printf("[ERROR] open 'myext2' failed, the file does not exist\n");
+			printf("[ERROR] open 'myext2' failed, using the root directory, creating the file\n");
+			path_fid=open(PWD_PATH,O_CREAT);
+			if (path_fid==-1)
+			{
+				printf("[ERROR] failed to create the %s file\n",PWD_PATH); /* Attempt to create the file again*/
+				exit(1);
+			}
 		}
 		else
 		{
-			printf("[ERROR] open 'myext2' failed\n");
+			printf("[ERROR] open 'myext2' failed ");
+			if(errno == EACCES) printf("permission denied");
+			printf("\n");
+			exit(1);
 		}
-		exit(1);
+
 	}
 
 	int res = read(path_fid, dir_name, BUF_SIZE);
@@ -89,7 +94,7 @@ int main(int argc, char *argv[])
 	DBG_MSG("inode_size %d inode_table %d\n",inode_size,inode_table);
 	if ( valid_path(dir_name,inode_table,inode_size,block_size,&inner_dir) == 0 ) // found the folder
 	{
-		DBG_MSG("What a surprise, i found the folder");
+		//DBG_MSG("What a surprise, i found the folder");
 		print_dir(&inner_dir,inode_table,inode_size,block_size);
 	}
 	else

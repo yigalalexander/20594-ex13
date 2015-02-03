@@ -134,39 +134,6 @@ int open_disk()
 	return open(BASE_DISK_PATH, O_RDWR);
 }
 
-//int read_pwd(char * dir_name)
-//{
-//	DBG_ENTRY
-//	int path_fid;
-//	path_fid = open(PWD_PATH, O_RDONLY);
-//	if (path_fid == -1)
-//	{
-//		if(errno == EACCES)
-//		{
-//			printf("[ERROR] open 'myext2' failed, permission denied\n");
-//		}
-//		else if(errno == ENONET)
-//		{
-//			printf("[ERROR] open 'myext2' failed, the file does not exist\n");
-//		}
-//		else
-//		{
-//			printf("[ERROR] open 'myext2' failed\n");
-//		}
-//		return -1;
-//	}
-//	close(path_fid);
-//	int res = read(path_fid, dir_name, BUF_SIZE);
-//	DBG_MSG("PWD from %s is:%s\n",PWD_PATH,dir_name);
-//	if (res == -1)
-//	{
-//		printf("[ERROR] failed to read from %s\n",PWD_PATH);
-//		return -1;
-//	}
-//	DBG_EXIT
-//	return 0;
-//}
-
 int get_disk_properties(int * block_size, struct ext2_super_block * sb, struct ext2_group_desc * gd)
 {
 	DBG_ENTRY
@@ -295,6 +262,7 @@ int print_dir(struct ext2_dir_entry_2 *dir_pointer, int inode_table,int inode_si
 
 	DBG_ENTRY
 	struct ext2_inode inode;
+	struct ext2_dir_entry_2 * de_pos;
 	int i, j, db_length;
 
 	DBG_MSG("dir name is %s at inode %d",dir_pointer->name,dir_pointer->inode);
@@ -304,6 +272,7 @@ int print_dir(struct ext2_dir_entry_2 *dir_pointer, int inode_table,int inode_si
 		return -1;
 	}
 	char dir_data[block_size];
+	de_pos=dir_pointer;
 	for ( i = 0; i < 12 && (inode.i_block[i]!=0); i++ ) /* Read the data blocks of the directory  */
 	{
 
@@ -320,13 +289,13 @@ int print_dir(struct ext2_dir_entry_2 *dir_pointer, int inode_table,int inode_si
 		j = 0;
 		while( j < db_length )
 		{
-			if( memcpy( dir_pointer, dir_data + j, sizeof( struct ext2_dir_entry_2))!= NULL)
+			if( memcpy( de_pos, dir_data + j, sizeof(struct ext2_dir_entry_2))!= NULL)
 			{
-				if(dir_pointer->inode!=0)
+				if(de_pos->inode!=0)
 				{
-					DBG_MSG("found dir named %s:",dir_pointer->name);
+					DBG_MSG("found dir named %s:",de_pos->name);
 				}
-				j += dir_pointer->rec_len;
+				j += de_pos->rec_len;
 			}
 		}
 	}
