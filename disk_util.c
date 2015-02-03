@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -256,8 +257,7 @@ int get_inode(struct ext2_inode* inode_pointer, int inode_number,int inode_table
 }
 
 
-
-int print_dir(struct ext2_dir_entry_2 *dir_pointer, int inode_table,int inode_size,int block_size)
+int print_dir_contents(struct ext2_dir_entry_2 *dir_pointer, int inode_table,int inode_size,int block_size)
 {
 
 	DBG_ENTRY
@@ -294,6 +294,11 @@ int print_dir(struct ext2_dir_entry_2 *dir_pointer, int inode_table,int inode_si
 				if(de_pos->inode!=0)
 				{
 					DBG_MSG("found dir named %s:",de_pos->name);
+					if (print_dir_entry(de_pos,inode_table,inode_size,block_size)==-1)
+					{
+						printf("[ERROR] printing file entry failed\n");
+						return -1;
+					}
 				}
 				j += de_pos->rec_len;
 			}
@@ -301,6 +306,24 @@ int print_dir(struct ext2_dir_entry_2 *dir_pointer, int inode_table,int inode_si
 	}
 	DBG_EXIT
 	return -1; /*the entry wasn't found*/
+}
+
+int print_dir_entry(struct ext2_dir_entry_2 * entry,int inode_table, int inode_size, int block_size)
+{
+	struct ext2_inode inode;
+	char date_string[100];
+	struct tm *converted_time;
+	if(get_inode(&inode, (entry->inode),inode_table,inode_size,block_size)==-1)
+	{
+		printf("[ERROR] get_inode failed\n");
+		return -1;
+	}
+	converted_time=localtime((time_t *) &inode.i_mtime);
+	strftime(date_string, sizeof(date_string), "%d-%b-%Y %H:%M:%S ",converted_time);
+	printf(" %s %s\n",date_string,entry->name);
+
+	// take the date from and convert it to a string
+	return 0;
 }
 
 

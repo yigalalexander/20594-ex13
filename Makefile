@@ -1,5 +1,5 @@
 
-FLAGS = -Wall  -L./  -m32 -lm -g3
+FLAGS = -Wall  -L./  -m32 -lm -g3 -Wno-unused-value
 
 all: clean disk_util.o my_cd.o my_cd my_dir
 

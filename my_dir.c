@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 	if ( valid_path(dir_name,inode_table,inode_size,block_size,&inner_dir) == 0 ) // found the folder
 	{
 		//DBG_MSG("What a surprise, i found the folder");
-		print_dir(&inner_dir,inode_table,inode_size,block_size);
+		print_dir_contents(&inner_dir,inode_table,inode_size,block_size);
 	}
 	else
 	{

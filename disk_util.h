@@ -39,6 +39,9 @@ int get_inode(struct ext2_inode* inode_pointer, int inode_number,int inode_table
 
 
 /* print contents of a directory*/
-int print_dir(struct ext2_dir_entry_2 *dir_pointer, int inode_table,int inode_size,int block_size);
+int print_dir_contents(struct ext2_dir_entry_2 *dir_pointer, int inode_table,int inode_size,int block_size);
+
+/* Prints a specific directory entry*/
+int print_dir_entry(struct ext2_dir_entry_2 * entry,int inode_table, int inode_size, int block_size);
 
 #endif
