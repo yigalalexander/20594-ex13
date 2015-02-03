@@ -39,6 +39,7 @@ int inode_size;
 int main(int argc, char *argv[])
 {
 	DBG_ENTRY
+
 	int block_size=BASE_BLOCK_SIZE;  /* bytes per sector from disk geometry */
 	struct ext2_dir_entry_2 inner_dir;
 	char dir_name[BUF_SIZE];

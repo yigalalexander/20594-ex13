@@ -264,9 +264,17 @@ int print_dir_contents(struct ext2_dir_entry_2 *dir_pointer, int inode_table,int
 	struct ext2_inode inode;
 	struct ext2_dir_entry_2 * de_pos;
 	int i, j, db_length;
+	int base_inode=dir_pointer->inode;
 
-	DBG_MSG("dir name is %s at inode %d",dir_pointer->name,dir_pointer->inode);
-	if(get_inode(&inode, (dir_pointer->inode)-1,inode_table,inode_size,block_size)==-1)
+
+	if ( base_inode<1 ) /* The root directory is at inode 1*/
+		base_inode=1;
+
+	if(get_inode(&inode,
+			base_inode,
+			inode_table,
+			inode_size,
+			block_size)==-1)
 	{
 		printf("[ERROR] get_inode failed\n");
 		return -1;
