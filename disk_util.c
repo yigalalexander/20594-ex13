@@ -321,16 +321,15 @@ int print_dir_entry(struct ext2_dir_entry_2 * entry,int inode_table, int inode_s
 	struct ext2_inode inode;
 	char date_string[100];
 	struct tm *converted_time;
-	if(get_inode(&inode, (entry->inode),inode_table,inode_size,block_size)==-1)
+	if(get_inode(&inode, (entry->inode-1),inode_table,inode_size,block_size)==-1)
 	{
 		printf("[ERROR] get_inode failed\n");
 		return -1;
 	}
-	converted_time=localtime((time_t *) &inode.i_mtime);
-	strftime(date_string, sizeof(date_string), "%d-%b-%Y %H:%M:%S ",converted_time);
+	converted_time=localtime((time_t *) &inode.i_ctime);
+	strftime(date_string, sizeof(date_string), "%d-%b-%Y %H:%M ",converted_time);
 	printf(" %s %s\n",date_string,entry->name);
 
-	// take the date from and convert it to a string
 	return 0;
 }
 
